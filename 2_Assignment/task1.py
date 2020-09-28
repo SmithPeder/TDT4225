@@ -1,3 +1,4 @@
+import os
 from DbConnector import DbConnector
 from tabulate import tabulate
 
@@ -49,13 +50,16 @@ class Task1:
         self.cursor.execute(query % table_name)
         self.db_connection.commit()
 
-    def insert_data(self, table_name):
-        names = ["Bobby", "Mc", "McSmack", "Board"]
-        for name in names:
-            # Take note that the name is wrapped in '' --> '%s' because it is a string,
-            # while an int would be %s etc
-            query = "INSERT INTO %s (name) VALUES ('%s')"
-            self.cursor.execute(query % (table_name, name))
+    def insert_users(self, table_name):
+        labels = open("dataset/dataset/labeled_ids.txt", "r").read().split("\n")
+        users = os.listdir("dataset/dataset/Data")
+        for u in users:
+            if u in labels:
+                query = "INSERT IGNORE INTO %s (id,has_labels) VALUES ('%s',True)"
+                self.cursor.execute(query % (table_name, u))
+                continue
+            query = "INSERT IGNORE INTO %s (id,has_labels) VALUES ('%s',False)"
+            self.cursor.execute(query % (table_name, u))
         self.db_connection.commit()
 
     def fetch_data(self, table_name):
@@ -87,6 +91,7 @@ def main():
         program.create_user_table("User")
         program.create_activity_table("Activity")
         program.create_trackpoint_table("Trackpoint")
+        program.insert_users("User")
 
         #        program.insert_data(table_name="Person")
         #        _ = program.fetch_data(table_name="Person")
