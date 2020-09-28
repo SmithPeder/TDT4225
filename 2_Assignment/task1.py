@@ -67,31 +67,63 @@ class Task1:
         table_name = "User"
         query = "SELECT * FROM %s"
         self.cursor.execute(query % table_name)
-        rows = self.cursor.fetchall()
+        users = self.cursor.fetchall()
 
-        for u in self.users:
-            has_labels = True
-            activities = os.listdir("dataset/dataset/Data/" + u + "/Trajectory")
-            for a in activities:
+        for user in users[1:]:
+            user_id, has_labels = user
+            print(user_id)
+            activities = os.listdir("dataset/dataset/Data/" + user_id + "/Trajectory")
+
+            for activity in activities:
                 file = (
-                    open("dataset/dataset/Data/" + u + "/Trajectory/" + a)
+                    open("dataset/dataset/Data/" + user_id + "/Trajectory/" + activity)
                     .read()
                     .split("\n")
                 )
                 if len(file) > 2500:
                     continue
 
-                query = "INSERT IGNORE INTO %s (id,has_labels) VALUES ('%s',True)"
-                self.cursor.execute(query % (table_name, u))
-
                 list_of_tp_string = file[6:]
-                list_of_tp_lists = []
+                trackpoints = []
                 for c in list_of_tp_string:
-                    list_of_tp_lists.append(tuple(c.split(",")[:-1]))
+                    if len(c.split(",")) > 2:
+                        trackpoints.append(tuple(c.split(",")))
 
-                # Trackpoints for one activity
-                print(len(list_of_tp_lists))
-                exit()
+                # Format for database
+                start_date_time_raw = trackpoints[0][5] + trackpoints[0][6]
+                end_date_time_raw = trackpoints[-1][5] + trackpoints[-1][6]
+
+                if has_labels:
+                    # Format for assertion
+                    start_date_time = "".join(
+                        e for e in start_date_time_raw if e.isalnum()
+                    )
+                    end_date_time = "".join(e for e in end_date_time_raw if e.isalnum())
+
+                    # print("START", start_date_time)
+                    # print("END", end_date_time)
+
+                    labels_for_user = (
+                        open("dataset/dataset/Data/" + user_id + "/labels.txt")
+                        .read()
+                        .split("\n")
+                    )
+                    for l in labels_for_user[1:-1]:
+                        split = l.split("\t")
+
+                        label_start_raw = split[0]
+                        label_start = "".join(e for e in label_start_raw if e.isalnum())
+
+                        label_end_raw = split[1]
+                        label_end = "".join(e for e in label_end_raw if e.isalnum())
+
+                        # print("START", label_start)
+                        # print("END", label_end)
+                        if (
+                            start_date_time == label_start
+                            and end_date_time == label_end
+                        ):
+                            print("FOUND IT", split[2])
 
     def fetch_data(self, table_name):
         query = "SELECT * FROM %s"
