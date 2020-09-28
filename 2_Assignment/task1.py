@@ -1,6 +1,7 @@
 import os
 from DbConnector import DbConnector
 from tabulate import tabulate
+from datetime import datetime as dt
 
 
 class Task1:
@@ -90,18 +91,18 @@ class Task1:
                         trackpoints.append(tuple(c.split(",")))
 
                 # Format for database
-                start_date_time_raw = trackpoints[0][5] + trackpoints[0][6]
-                end_date_time_raw = trackpoints[-1][5] + trackpoints[-1][6]
+                start_date_time_raw = trackpoints[0][5] + " " + trackpoints[0][6]
+                end_date_time_raw = trackpoints[-1][5] + " " + trackpoints[-1][6]
+
+                # Format for assertion
+                start_date_time = dt.strptime(start_date_time_raw, "%Y-%m-%d %H:%M:%S")
+                end_date_time = dt.strptime(end_date_time_raw, "%Y-%m-%d %H:%M:%S")
+
+                activity_query = """INSERT IGNORE INTO %s 
+                            (user_id, transportation_mode, start_date_time, end_date_time) 
+                            VALUES ('%s', '%s', '%s', '%s')"""
 
                 if has_labels:
-                    # Format for assertion
-                    start_date_time = "".join(
-                        e for e in start_date_time_raw if e.isalnum()
-                    )
-                    end_date_time = "".join(e for e in end_date_time_raw if e.isalnum())
-
-                    # print("START", start_date_time)
-                    # print("END", end_date_time)
 
                     labels_for_user = (
                         open("dataset/dataset/Data/" + user_id + "/labels.txt")
@@ -111,19 +112,20 @@ class Task1:
                     for l in labels_for_user[1:-1]:
                         split = l.split("\t")
 
-                        label_start_raw = split[0]
-                        label_start = "".join(e for e in label_start_raw if e.isalnum())
+                        label_start = dt.strptime(split[0], "%Y/%m/%d %H:%M:%S")
+                        label_end = dt.strptime(split[1], "%Y/%m/%d %H:%M:%S")
 
-                        label_end_raw = split[1]
-                        label_end = "".join(e for e in label_end_raw if e.isalnum())
-
-                        # print("START", label_start)
-                        # print("END", label_end)
                         if (
                             start_date_time == label_start
                             and end_date_time == label_end
                         ):
-                            print("FOUND IT", split[2])
+                            self.cursor.execute(activity_query % ("Activity", user_id, split[2], start_date_time, end_date_time))
+                            continue
+                self.cursor.execute(activity_query % ("Activity", user_id, "NULL", start_date_time, end_date_time))
+
+        self.db_connection.commit()
+
+
 
     def fetch_data(self, table_name):
         query = "SELECT * FROM %s"
