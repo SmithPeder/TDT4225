@@ -70,7 +70,8 @@ class Task1:
         self.cursor.execute(query % table_name)
         users = self.cursor.fetchall()
 
-        for user in users[1:]:
+        # Kjører bare for bruker nr 6 for å teste
+        for user in users[7:8]:
             user_id, has_labels = user
             print(user_id)
             activities = os.listdir("dataset/dataset/Data/" + user_id + "/Trajectory")
@@ -102,6 +103,12 @@ class Task1:
                             (user_id, transportation_mode, start_date_time, end_date_time) 
                             VALUES ('%s', '%s', '%s', '%s')"""
 
+                trackpoint_query = """INSERT IGNORE INTO Trackpoint 
+                            (activity_id, lat, lon, altitiude, date_days, date_time) 
+                            VALUES (%s, %s, %s, %s, %s, %s)"""
+
+                
+
                 if has_labels:
 
                     labels_for_user = (
@@ -120,10 +127,31 @@ class Task1:
                             and end_date_time == label_end
                         ):
                             self.cursor.execute(activity_query % ("Activity", user_id, split[2], start_date_time, end_date_time))
+                            # Gets the activity_id from the last one added to the database
+                            activity_id = self.cursor.lastrowid
+                            new_trackpoints = self.alter_trackpoint(trackpoints, activity_id)
+                            # print(new_trackpoints[:2])
+                            self.cursor.executemany(trackpoint_query, new_trackpoints)
                             continue
                 self.cursor.execute(activity_query % ("Activity", user_id, "NULL", start_date_time, end_date_time))
+                print("We have activity")
+                # Gets the activity_id from the last one added to the database
+                activity_id = self.cursor.lastrowid
+                print(activity_id)
+                new_trackpoints = self.alter_trackpoint(trackpoints, activity_id)
+                print(new_trackpoints[:2])
+                # den neste linjen bruker 100 år, har ikke giddet å kjøre den ferdig engang..
+                self.cursor.executemany(trackpoint_query, new_trackpoints)
 
         self.db_connection.commit()
+
+    def alter_trackpoint(self, trackpoints, activity_id):
+        new_trackpoints = []
+        for point in trackpoints:
+            point = (activity_id,) + point[:2] + point[3:4] + point[5:]
+            new_trackpoints.append(point)
+        return new_trackpoints
+
 
 
 
