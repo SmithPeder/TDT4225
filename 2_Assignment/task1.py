@@ -8,6 +8,8 @@ class Task1:
         self.connection = DbConnector()
         self.db_connection = self.connection.db_connection
         self.cursor = self.connection.cursor
+        self.labels = open("dataset/dataset/labeled_ids.txt", "r").read().split("\n")
+        self.users = os.listdir("dataset/dataset/Data")
 
     def create_user_table(self, table_name):
         query = """CREATE TABLE IF NOT EXISTS %s (
@@ -51,16 +53,45 @@ class Task1:
         self.db_connection.commit()
 
     def insert_users(self, table_name):
-        labels = open("dataset/dataset/labeled_ids.txt", "r").read().split("\n")
-        users = os.listdir("dataset/dataset/Data")
-        for u in users:
-            if u in labels:
+        for u in self.users:
+            if u in self.labels:
                 query = "INSERT IGNORE INTO %s (id,has_labels) VALUES ('%s',True)"
                 self.cursor.execute(query % (table_name, u))
                 continue
             query = "INSERT IGNORE INTO %s (id,has_labels) VALUES ('%s',False)"
             self.cursor.execute(query % (table_name, u))
         self.db_connection.commit()
+
+    def insert_activity_and_trackpoints(self):
+        # Henter brukere fra Database
+        table_name = "User"
+        query = "SELECT * FROM %s"
+        self.cursor.execute(query % table_name)
+        rows = self.cursor.fetchall()
+
+        for u in self.users:
+            has_labels = True
+            activities = os.listdir("dataset/dataset/Data/" + u + "/Trajectory")
+            for a in activities:
+                file = (
+                    open("dataset/dataset/Data/" + u + "/Trajectory/" + a)
+                    .read()
+                    .split("\n")
+                )
+                if len(file) > 2500:
+                    continue
+
+                query = "INSERT IGNORE INTO %s (id,has_labels) VALUES ('%s',True)"
+                self.cursor.execute(query % (table_name, u))
+
+                list_of_tp_string = file[6:]
+                list_of_tp_lists = []
+                for c in list_of_tp_string:
+                    list_of_tp_lists.append(tuple(c.split(",")[:-1]))
+
+                # Trackpoints for one activity
+                print(len(list_of_tp_lists))
+                exit()
 
     def fetch_data(self, table_name):
         query = "SELECT * FROM %s"
@@ -92,6 +123,8 @@ def main():
         program.create_activity_table("Activity")
         program.create_trackpoint_table("Trackpoint")
         program.insert_users("User")
+
+        program.insert_activity_and_trackpoints()
 
         #        program.insert_data(table_name="Person")
         #        _ = program.fetch_data(table_name="Person")
