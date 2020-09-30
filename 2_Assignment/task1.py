@@ -42,7 +42,7 @@ class Task1:
                    activity_id INT NOT NULL,
                    lat DOUBLE,
                    lon DOUBLE,
-                   altitiude INT,
+                   altitude INT,
                    date_days DOUBLE,
                    date_time DATETIME,
 
@@ -104,10 +104,8 @@ class Task1:
                             VALUES ('%s', '%s', '%s', '%s')"""
 
                 trackpoint_query = """INSERT IGNORE INTO Trackpoint 
-                            (activity_id, lat, lon, altitiude, date_days, date_time) 
+                            (activity_id, lat, lon, altitude, date_days, date_time) 
                             VALUES (%s, %s, %s, %s, %s, %s)"""
-
-                
 
                 if has_labels:
 
@@ -126,14 +124,28 @@ class Task1:
                             start_date_time == label_start
                             and end_date_time == label_end
                         ):
-                            self.cursor.execute(activity_query % ("Activity", user_id, split[2], start_date_time, end_date_time))
+                            self.cursor.execute(
+                                activity_query
+                                % (
+                                    "Activity",
+                                    user_id,
+                                    split[2],
+                                    start_date_time,
+                                    end_date_time,
+                                )
+                            )
                             # Gets the activity_id from the last one added to the database
                             activity_id = self.cursor.lastrowid
-                            new_trackpoints = self.alter_trackpoint(trackpoints, activity_id)
+                            new_trackpoints = self.alter_trackpoint(
+                                trackpoints, activity_id
+                            )
                             # print(new_trackpoints[:2])
                             self.cursor.executemany(trackpoint_query, new_trackpoints)
                             continue
-                self.cursor.execute(activity_query % ("Activity", user_id, "NULL", start_date_time, end_date_time))
+                self.cursor.execute(
+                    activity_query
+                    % ("Activity", user_id, "NULL", start_date_time, end_date_time)
+                )
                 print("We have activity")
                 # Gets the activity_id from the last one added to the database
                 activity_id = self.cursor.lastrowid
@@ -151,9 +163,6 @@ class Task1:
             point = (activity_id,) + point[:2] + point[3:4] + point[5:]
             new_trackpoints.append(point)
         return new_trackpoints
-
-
-
 
     def fetch_data(self, table_name):
         query = "SELECT * FROM %s"
@@ -181,12 +190,12 @@ def main():
     program = None
     try:
         program = Task1()
-        program.create_user_table("User")
-        program.create_activity_table("Activity")
+        # program.create_user_table("User")
+        # program.create_activity_table("Activity")
         program.create_trackpoint_table("Trackpoint")
-        program.insert_users("User")
+        # program.insert_users("User")
 
-        program.insert_activity_and_trackpoints()
+        # program.insert_activity_and_trackpoints()
 
         #        program.insert_data(table_name="Person")
         #        _ = program.fetch_data(table_name="Person")
