@@ -29,7 +29,9 @@ class Task1:
                    start_date_time DATETIME,
                    end_date_time DATETIME,
 
-                   FOREIGN KEY (user_id) REFERENCES User(id)
+                   FOREIGN KEY (user_id) 
+                        REFERENCES User(id) 
+                        ON DELETE CASCADE
                    )
                 """
         # This adds table_name to the %s variable and executes the query
@@ -43,10 +45,11 @@ class Task1:
                    lat DOUBLE,
                    lon DOUBLE,
                    altitude INT,
-                   date_days DOUBLE,
-                   date_time DATETIME,
+                   data DATETIME,
 
-                   FOREIGN KEY (activity_id) REFERENCES Activity(id)
+                   FOREIGN KEY (activity_id) 
+                        REFERENCES Activity(id)
+                        ON DELETE CASCADE
                    )
                 """
         # This adds table_name to the %s variable and executes the query
@@ -55,6 +58,8 @@ class Task1:
 
     def insert_users(self, table_name):
         for u in self.users:
+            if u == ".DS_Store":
+                continue
             if u in self.labels:
                 query = "INSERT IGNORE INTO %s (id,has_labels) VALUES ('%s',True)"
                 self.cursor.execute(query % (table_name, u))
@@ -71,9 +76,11 @@ class Task1:
         users = self.cursor.fetchall()
 
         # Kjører bare for bruker nr 6 for å teste
-        for user in users[7:8]:
+        for user in users:
             user_id, has_labels = user
-            print(user_id)
+            if user_id == ".DS_Store":
+                continue
+            print("UserID", user_id)
             activities = os.listdir("dataset/dataset/Data/" + user_id + "/Trajectory")
 
             for activity in activities:
@@ -82,7 +89,7 @@ class Task1:
                     .read()
                     .split("\n")
                 )
-                if len(file) > 2500:
+                if len(file) > 2500 or file == ".DS_Store":
                     continue
 
                 list_of_tp_string = file[6:]
@@ -99,16 +106,15 @@ class Task1:
                 start_date_time = dt.strptime(start_date_time_raw, "%Y-%m-%d %H:%M:%S")
                 end_date_time = dt.strptime(end_date_time_raw, "%Y-%m-%d %H:%M:%S")
 
-                activity_query = """INSERT IGNORE INTO %s 
+                activity_query = """INSERT INTO %s 
                             (user_id, transportation_mode, start_date_time, end_date_time) 
                             VALUES ('%s', '%s', '%s', '%s')"""
 
-                trackpoint_query = """INSERT IGNORE INTO Trackpoint 
-                            (activity_id, lat, lon, altitude, date_days, date_time) 
-                            VALUES (%s, %s, %s, %s, %s, %s)"""
+                trackpoint_query = """INSERT INTO Trackpoint 
+                            (activity_id, lat, lon, altitude, data) 
+                            VALUES (%s, %s, %s, %s, %s)"""
 
                 if has_labels:
-
                     labels_for_user = (
                         open("dataset/dataset/Data/" + user_id + "/labels.txt")
                         .read()
@@ -141,26 +147,27 @@ class Task1:
                             )
                             # print(new_trackpoints[:2])
                             self.cursor.executemany(trackpoint_query, new_trackpoints)
+
                             continue
+
                 self.cursor.execute(
                     activity_query
                     % ("Activity", user_id, "NULL", start_date_time, end_date_time)
                 )
-                print("We have activity")
                 # Gets the activity_id from the last one added to the database
                 activity_id = self.cursor.lastrowid
-                print(activity_id)
                 new_trackpoints = self.alter_trackpoint(trackpoints, activity_id)
-                print(new_trackpoints[:2])
                 # den neste linjen bruker 100 år, har ikke giddet å kjøre den ferdig engang..
+
                 self.cursor.executemany(trackpoint_query, new_trackpoints)
 
-        self.db_connection.commit()
+                self.db_connection.commit()
 
     def alter_trackpoint(self, trackpoints, activity_id):
         new_trackpoints = []
         for point in trackpoints:
-            point = (activity_id,) + point[:2] + point[3:4] + point[5:]
+            combined_date = dt.strptime(point[5] + point[6], "%Y-%m-%d%H:%M:%S")
+            point = (activity_id,) + point[:2] + point[3:4] + (combined_date,)
             new_trackpoints.append(point)
         return new_trackpoints
 
@@ -190,17 +197,12 @@ def main():
     program = None
     try:
         program = Task1()
-        # program.create_user_table("User")
-        # program.create_activity_table("Activity")
+        program.create_user_table("User")
+        program.create_activity_table("Activity")
         program.create_trackpoint_table("Trackpoint")
-        # program.insert_users("User")
+        program.insert_users("User")
 
-        # program.insert_activity_and_trackpoints()
-
-        #        program.insert_data(table_name="Person")
-        #        _ = program.fetch_data(table_name="Person")
-        #        program.drop_table(table_name="Person")
-        #        # Check that the table is dropped
+        program.insert_activity_and_trackpoints()
         program.show_tables()
     except Exception as e:
         print("ERROR: Failed to use database:", e)
