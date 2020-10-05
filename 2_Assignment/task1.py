@@ -75,7 +75,7 @@ class Task1:
         self.cursor.execute(query % table_name)
         users = self.cursor.fetchall()
 
-        # Kjører bare for bruker nr 6 for å teste
+
         for user in users:
             user_id, has_labels = user
             if user_id == ".DS_Store":
@@ -84,12 +84,17 @@ class Task1:
             activities = os.listdir("dataset/dataset/Data/" + user_id + "/Trajectory")
 
             for activity in activities:
+                path = "dataset/dataset/Data/" + user_id + "/Trajectory/" + activity
+
+                if os.stat(path).st_size > 200000:
+                    continue
+
                 file = (
-                    open("dataset/dataset/Data/" + user_id + "/Trajectory/" + activity)
+                    open(path)
                     .read()
                     .split("\n")
                 )
-                if len(file) > 2500 or file == ".DS_Store":
+                if len(file) > 2494 or file == ".DS_Store":
                     continue
 
                 list_of_tp_string = file[6:]
@@ -147,21 +152,19 @@ class Task1:
                             )
                             # print(new_trackpoints[:2])
                             self.cursor.executemany(trackpoint_query, new_trackpoints)
+                            self.db_connection.commit()
 
-                            continue
+                else:
+                    self.cursor.execute(
+                        activity_query
+                        % ("Activity", user_id, "NULL", start_date_time, end_date_time)
+                    )
+                    # Gets the activity_id from the last one added to the database
+                    activity_id = self.cursor.lastrowid
+                    new_trackpoints = self.alter_trackpoint(trackpoints, activity_id)
 
-                self.cursor.execute(
-                    activity_query
-                    % ("Activity", user_id, "NULL", start_date_time, end_date_time)
-                )
-                # Gets the activity_id from the last one added to the database
-                activity_id = self.cursor.lastrowid
-                new_trackpoints = self.alter_trackpoint(trackpoints, activity_id)
-                # den neste linjen bruker 100 år, har ikke giddet å kjøre den ferdig engang..
-
-                self.cursor.executemany(trackpoint_query, new_trackpoints)
-
-                self.db_connection.commit()
+                    self.cursor.executemany(trackpoint_query, new_trackpoints)
+                    self.db_connection.commit()
 
     def alter_trackpoint(self, trackpoints, activity_id):
         new_trackpoints = []
