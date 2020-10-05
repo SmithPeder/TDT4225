@@ -94,22 +94,19 @@ class Task1:
                     .read()
                     .split("\n")
                 )
-                if len(file) > 2494 or file == ".DS_Store":
+                if len(file) > 2506 or file == ".DS_Store":
                     continue
 
                 list_of_tp_string = file[6:]
                 trackpoints = []
-                for c in list_of_tp_string:
-                    if len(c.split(",")) > 2:
-                        trackpoints.append(tuple(c.split(",")))
+                for trackpoint in list_of_tp_string:
+                    t_split = trackpoint.split(',')
+                    if len(t_split) > 2:
+                        trackpoints.append(tuple(t_split))
 
                 # Format for database
                 start_date_time_raw = trackpoints[0][5] + " " + trackpoints[0][6]
                 end_date_time_raw = trackpoints[-1][5] + " " + trackpoints[-1][6]
-
-                # Format for assertion
-                start_date_time = dt.strptime(start_date_time_raw, "%Y-%m-%d %H:%M:%S")
-                end_date_time = dt.strptime(end_date_time_raw, "%Y-%m-%d %H:%M:%S")
 
                 activity_query = """INSERT INTO %s 
                             (user_id, transportation_mode, start_date_time, end_date_time) 
@@ -119,7 +116,13 @@ class Task1:
                             (activity_id, lat, lon, altitude, data) 
                             VALUES (%s, %s, %s, %s, %s)"""
 
+                trans_mode = "NULL"
                 if has_labels:
+
+                    # Format for conparison
+                    start_date_time = dt.strptime(start_date_time_raw, "%Y-%m-%d %H:%M:%S")
+                    end_date_time = dt.strptime(end_date_time_raw, "%Y-%m-%d %H:%M:%S")
+
                     labels_for_user = (
                         open("dataset/dataset/Data/" + user_id + "/labels.txt")
                         .read()
@@ -135,36 +138,18 @@ class Task1:
                             start_date_time == label_start
                             and end_date_time == label_end
                         ):
-                            self.cursor.execute(
-                                activity_query
-                                % (
-                                    "Activity",
-                                    user_id,
-                                    split[2],
-                                    start_date_time,
-                                    end_date_time,
-                                )
-                            )
-                            # Gets the activity_id from the last one added to the database
-                            activity_id = self.cursor.lastrowid
-                            new_trackpoints = self.alter_trackpoint(
-                                trackpoints, activity_id
-                            )
-                            # print(new_trackpoints[:2])
-                            self.cursor.executemany(trackpoint_query, new_trackpoints)
-                            self.db_connection.commit()
+                           trans_mode = split[2]
 
-                else:
-                    self.cursor.execute(
-                        activity_query
-                        % ("Activity", user_id, "NULL", start_date_time, end_date_time)
-                    )
-                    # Gets the activity_id from the last one added to the database
-                    activity_id = self.cursor.lastrowid
-                    new_trackpoints = self.alter_trackpoint(trackpoints, activity_id)
+                self.cursor.execute(
+                    activity_query
+                    % ("Activity", user_id, trans_mode, start_date_time_raw, end_date_time_raw))
 
-                    self.cursor.executemany(trackpoint_query, new_trackpoints)
-                    self.db_connection.commit()
+                # Gets the activity_id from the last one added to the database
+                activity_id = self.cursor.lastrowid
+                new_trackpoints = self.alter_trackpoint(trackpoints, activity_id)
+
+                self.cursor.executemany(trackpoint_query, new_trackpoints)
+                self.db_connection.commit()
 
     def alter_trackpoint(self, trackpoints, activity_id):
         new_trackpoints = []
