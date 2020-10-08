@@ -2,6 +2,7 @@ import os
 from DbConnector import DbConnector
 from tabulate import tabulate
 from datetime import datetime as dt
+from haversine import haversine, Unit
 
 
 class Task1:
@@ -180,17 +181,30 @@ class Task1:
         rows = self.cursor.fetchall()
         print(tabulate(rows, headers=self.cursor.column_names))
 
+    def calculate_distance(self):
+        query = """select lat, lon from Trackpoint as t join Activity as a
+         on a.id=t.activity_id 
+         where a.user_id='112' and YEAR(data)='2008' and a.transportation_mode='walk';"""
+        self.cursor.execute(query)
+        result = self.cursor.fetchall()
+        total_distance = 0
+        for i in range(1,len(result)):
+            total_distance += haversine(result[i-1], result[i])
+        print(total_distance)
+
+
 
 def main():
     program = None
     try:
         program = Task1()
-        program.create_user_table("User")
+        """ program.create_user_table("User")
         program.create_activity_table("Activity")
         program.create_trackpoint_table("Trackpoint")
         program.insert_users("User")
+        program.insert_activity_and_trackpoints()"""
 
-        program.insert_activity_and_trackpoints()
+        program.calculate_distance()
         program.show_tables()
     except Exception as e:
         print("ERROR: Failed to use database:", e)
