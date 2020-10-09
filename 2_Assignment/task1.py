@@ -192,18 +192,15 @@ class Task1:
             total_distance += haversine(result[i-1], result[i])
         print(total_distance)
 
-
-
 def main():
     program = None
     try:
         program = Task1()
-        """ program.create_user_table("User")
+        program.create_user_table("User")
         program.create_activity_table("Activity")
         program.create_trackpoint_table("Trackpoint")
         program.insert_users("User")
-        program.insert_activity_and_trackpoints()"""
-
+        program.insert_activity_and_trackpoints()
         program.calculate_distance()
         program.show_tables()
     except Exception as e:
