@@ -13,16 +13,15 @@ class Task1:
         # Read all labels right away, to avoid doing it later
         self.labels = open("dataset/labeled_ids.txt", "r").read().split("\n")[:-1]
 
-    def find_labels(self,user):
+    def find_labels(self, user):
         labels_for_user = []
         if user in self.labels:
             # Read the labels for this user, skip the first line as they are headers
             labels_for_user = (
-                open("dataset/Data/" + user + "/labels.txt")
-                .read()
-                .split("\n")
+                open("dataset/Data/" + user + "/labels.txt").read().split("\n")
             )
-            labels_for_user = [t.split("\t") for t in labels_for_user[1:]]
+            labels_for_user = [t.split("\t") for t in labels_for_user[1:-1]]
+        return labels_for_user
 
     def insert(self):
         # Use os.walk to traverse
@@ -65,9 +64,21 @@ class Task1:
                     trackpoints[-1][5] + trackpoints[-1][6], "%Y-%m-%d%H:%M:%S"
                 )
 
+                trans_mode = None
+                if user in self.labels:
+                    for label in labels_for_user:
+                        label_start = dt.strptime(label[0], "%Y/%m/%d %H:%M:%S")
+                        label_end = dt.strptime(label[1], "%Y/%m/%d %H:%M:%S")
+
+                        if (
+                            start_time == label_start
+                            and end_time == label_end
+                        ):
+                            trans_mode = label[2]
+
                 format_activity = {
                     "userId": None,  # should be reference *pointer*. Update this in second iteration
-                    "transportationMode": None,  # will be updated in next iteration
+                    "transportationMode": trans_mode,  # will be updated in next iteration
                     "startTime": start_time,
                     "endTime": end_time,
                 }
