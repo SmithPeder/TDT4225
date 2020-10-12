@@ -3,23 +3,16 @@ import os
 
 
 class DbConnector:
-    """
-    Connects to the MongoDB server on the Ubuntu virtual machine.
-    Connector needs HOST, USER and PASSWORD to connect.
+    
+    def __init__(self):
+        HOST = os.environ.get('HOST')
+        DATABASE = os.environ.get('DATABASE')
+        USER = os.getenv('USER')
+        PASSWORD = os.getenv('PASSWORD')
 
-    Example:
-    HOST = "tdt4225-00.idi.ntnu.no" // Your server IP address/domain name
-    USER = "testuser" // This is the user you created and added privileges for
-    PASSWORD = "test123" // The password you set for said user
-    """
-
-    def __init__(self,
-        HOST = os.getenv("HOST")
-        DATABASE = os.environ.get("DATABASE")
-        USER = os.environ.get("USER")
-        PASSWORD = os.environ.get("PASSWORD")
         uri = "mongodb://%s:%s@%s/%s" % (USER, PASSWORD, HOST, DATABASE)
         # Connect to the databases
+
         try:
             self.client = MongoClient(uri)
             self.db = self.client[DATABASE]
