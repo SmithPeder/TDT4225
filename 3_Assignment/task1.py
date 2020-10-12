@@ -26,8 +26,6 @@ class Task1:
             activities = []
             
             for activity in files:
-                #create activity (som kan bli peker til trackpoint)
-
                 plt_path = root + '/' + activity
 
                 # First check if the size of the file is above 200kb, in which case it will be longer then 3000lines
@@ -35,37 +33,32 @@ class Task1:
                     continue
 
                 # Split the file into lines, each line is a trackpoint
-                trackpoint_lines = open(root + '/' + activity).read().split("\n")
+                activity_file = open(root + '/' + activity).read().split("\n")
 
                 # Don't continue if there are more than 2506 lines in the file
-                if (len(trackpoint_lines) > 2506):
+                if (len(activity_file) > 2506):
                     continue
+                
+                # Only lines 6 and out are trackpoints, and we wan't to split each line on ","
+                trackpoints = [ t.split(",") for t in activity_file[6:-1] ]
 
-                # (Activity: id, user_id(??), transportation_mode, start_time, end_time)
+                # We can now find the start_time and end_time of the activity by using the first and last trackpoint
+                start_time = dt.strptime(trackpoints[0][5] + trackpoints[0][6], "%Y-%m-%d%H:%M:%S")
+                end_time = dt.strptime(trackpoints[-1][5] + trackpoints[-1][6], "%Y-%m-%d%H:%M:%S")
+
                 format_activity = {
                     "user_id": None,# should be reference *pointer*. Update this in second iteration
                     "transportation_mode": None, # will be updated in next iteration
-                    "start_time": None,# will be updated in next iteration
-                    "end_time": None # will be updated in next iteration
+                    "start_time": start_time,
+                    "end_time": end_time
                 }
 
                 # Create activity
                 activity_id = self.db["Activity"].insert_one(format_activity).inserted_id
-
-                # Hold the ID of every activity we create
                 activities.append(activity_id)
 
-                # we update start time and endtime later (with labels)
-                #start_time = dt.strptime(list_of_trackpoints[0][5] + " " + list_of_trackpoints[0][6], "%Y-%m-%d %H:%M:%S")  
-                #end_time = dt.strptime(list_of_trackpoints[-1][5] + " " + list_of_trackpoints[-1][6], "%Y-%m-%d %H:%M:%S")
-
                 format_trackpoints = []
-                for t in trackpoint_lines[6:]:
-                    trackpoint = t.split(",")
-                    # Avoid wrong trackpoints
-                    if (len(trackpoint) < 3):
-                        continue
-
+                for trackpoint in trackpoints:
                     date_formatted = dt.strptime(trackpoint[5] + trackpoint[6], "%Y-%m-%d%H:%M:%S")
                     format_trackpoint = {
                         "lat": trackpoint[0],
@@ -76,15 +69,16 @@ class Task1:
                     } 
                     format_trackpoints.append(format_trackpoint)
                 self.db["Trackpoint"].insert_many(format_trackpoints)
+
             # Create a user
             format_user = {
+                "_id": user,
                 "has_labels": False,
                 "activities": activities
             }
             self.db["User"].insert_one(format_user)
             print("Created user", user, "with", len(activities), "activities")
 
-                
     def create_coll(self, collection_name):
         collection = self.db.create_collection(collection_name)    
         print('Created collection: ', collection)
