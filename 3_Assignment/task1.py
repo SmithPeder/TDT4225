@@ -1,0 +1,123 @@
+from pprint import pprint 
+from DbConnector import DbConnector
+import os
+from datetime import datetime as dt
+
+
+class Task1:
+
+    def __init__(self):
+        self.connection = DbConnector()
+        self.client = self.connection.client
+        self.db = self.connection.db
+
+    def insert(self):
+        # Use os.walk to traverse
+        for (root, dirs, files) in os.walk('dataset/data', topdown=True): 
+            # If we are not on .plt level we keep traversting
+            if not any(".plt" in s for s in files):
+                continue
+            
+            # If we are on .plt level, we know the username will be the [2] index of the root
+            user = root.split("/")[2]
+            print(user)
+
+            # Hold a list of activities at this level
+            activities = []
+            
+            for activity in files:
+                #create activity (som kan bli peker til trackpoint)
+
+                plt_path = root + '/' + activity
+
+                # First check if the size of the file is above 200kb, in which case it will be longer then 3000lines
+                if os.stat(plt_path).st_size > 200000:
+                    continue
+
+                # Split the file into lines, each line is a trackpoint
+                trackpoint_lines = open(root + '/' + activity).read().split("\n")
+
+                # Don't continue if there are more than 2506 lines in the file
+                if (len(trackpoint_lines) > 2506):
+                    continue
+
+                # (Activity: id, user_id(??), transportation_mode, start_time, end_time)
+                format_activity = {
+                    "user_id": None,# should be reference *pointer*. Update this in second iteration
+                    "transportation_mode": None, # will be updated in next iteration
+                    "start_time": None,# will be updated in next iteration
+                    "end_time": None # will be updated in next iteration
+                }
+
+                # Create activity
+                activity_id = self.db["Activity"].insert_one(format_activity).inserted_id
+
+                # Hold the ID of every activity we create
+                activities.append(activity_id)
+
+                # we update start time and endtime later (with labels)
+                #start_time = dt.strptime(list_of_trackpoints[0][5] + " " + list_of_trackpoints[0][6], "%Y-%m-%d %H:%M:%S")  
+                #end_time = dt.strptime(list_of_trackpoints[-1][5] + " " + list_of_trackpoints[-1][6], "%Y-%m-%d %H:%M:%S")
+
+                format_trackpoints = []
+                for t in trackpoint_lines[6:]:
+                    trackpoint = t.split(",")
+                    # Avoid wrong trackpoints
+                    if (len(trackpoint) < 3):
+                        continue
+
+                    date_formatted = dt.strptime(trackpoint[5] + trackpoint[6], "%Y-%m-%d%H:%M:%S")
+                    format_trackpoint = {
+                        "lat": trackpoint[0],
+                        "lon": trackpoint[1], 
+                        "altitude": trackpoint[3], 
+                        "date_time": date_formatted, 
+                        "activity": activity_id
+                    } 
+                    format_trackpoints.append(format_trackpoint)
+                self.db["Trackpoint"].insert_many(format_trackpoints)
+            # Create a user
+            format_user = {
+                "has_labels": False,
+                "activities": activities
+            }
+            self.db["User"].insert_one(format_user)
+            print("Created user", user, "with", len(activities), "activities")
+
+                
+    def create_coll(self, collection_name):
+        collection = self.db.create_collection(collection_name)    
+        print('Created collection: ', collection)
+        
+    def fetch_documents(self, collection_name):
+        collection = self.db[collection_name]
+        documents = collection.find({})
+        for doc in documents: 
+            pprint(doc)
+        
+    def drop_coll(self, collection_name):
+        collection = self.db[collection_name]
+        collection.drop()
+        
+    def show_coll(self):
+        collections = self.client['test'].list_collection_names()
+        print(collections)
+
+def main():
+    program = None
+    try:
+        program = Task1()
+        #program.create_coll(collection_name="User")
+        #program.create_coll(collection_name="Activity")
+        #program.create_coll(collection_name="Trackpoint")
+        program.insert()
+
+    except Exception as e:
+        print("ERROR: Failed to use database:", e)
+    finally:
+        if program:
+            program.connection.close_connection()
+
+
+if __name__ == '__main__':
+    main()
