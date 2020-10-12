@@ -192,6 +192,7 @@ class Task1:
             total_distance += haversine(result[i-1], result[i])
         print(total_distance)
 
+
 def main():
     program = None
     try:
