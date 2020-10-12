@@ -11,6 +11,9 @@ class Task1:
         self.client = self.connection.client
         self.db = self.connection.db
 
+        # Read all labels right away, to avoid doing it later
+        self.labels = open("dataset/labeled_ids.txt", "r").read().split("\n")[:-1]
+
     def insert(self):
         # Use os.walk to traverse
         for (root, dirs, files) in os.walk('dataset/data', topdown=True): 
@@ -20,7 +23,6 @@ class Task1:
             
             # If we are on .plt level, we know the username will be the [2] index of the root
             user = root.split("/")[2]
-            print(user)
 
             # Hold a list of activities at this level
             activities = []
@@ -73,7 +75,7 @@ class Task1:
             # Create a user
             format_user = {
                 "_id": user,
-                "has_labels": False,
+                "has_labels": user in self.labels,
                 "activities": activities
             }
             self.db["User"].insert_one(format_user)
