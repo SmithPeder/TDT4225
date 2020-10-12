@@ -13,6 +13,17 @@ class Task1:
         # Read all labels right away, to avoid doing it later
         self.labels = open("dataset/labeled_ids.txt", "r").read().split("\n")[:-1]
 
+    def find_labels(self,user):
+        labels_for_user = []
+        if user in self.labels:
+            # Read the labels for this user, skip the first line as they are headers
+            labels_for_user = (
+                open("dataset/Data/" + user + "/labels.txt")
+                .read()
+                .split("\n")
+            )
+            labels_for_user = [t.split("\t") for t in labels_for_user[1:]]
+
     def insert(self):
         # Use os.walk to traverse
         for (root, dirs, files) in os.walk("dataset/data", topdown=True):
@@ -22,6 +33,9 @@ class Task1:
 
             # If we are on .plt level, we know the username will be the [2] index of the root
             user = root.split("/")[2]
+
+            # Get the users labels, if there are any
+            labels_for_user = self.find_labels(user)
 
             # Hold a list of activities at this level
             activities = []
@@ -111,9 +125,14 @@ def main():
     program = None
     try:
         program = Task1()
-        # program.create_coll(collection_name="User")
-        # program.create_coll(collection_name="Activity")
-        # program.create_coll(collection_name="Trackpoint")
+        program.drop_coll(collection_name="User")
+        program.drop_coll(collection_name="Activity")
+        program.drop_coll(collection_name="Trackpoint")
+
+        program.create_coll(collection_name="User")
+        program.create_coll(collection_name="Activity")
+        program.create_coll(collection_name="Trackpoint")
+
         program.insert()
 
     except Exception as e:
