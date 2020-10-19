@@ -11,7 +11,7 @@ class Task1:
         self.db = self.connection.db
 
         # Read all labels right away, to avoid doing it later
-        self.labels = open("dataset/labeled_ids.txt", "r").read().split("\n")[:-1]
+        self.labels = open("dataset/dataset/labeled_ids.txt", "r").read().split("\n")[:-1]
 
     def find_labels(self, user):
         labels_for_user = []
