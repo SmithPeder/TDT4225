@@ -13,7 +13,7 @@ class Task1:
         self.db = self.connection.db
 
         # Read all labels right away, to avoid doing it later
-        self.labels = open("dataset/dataset/labeled_ids.txt",
+        self.labels = open("dataset/labeled_ids.txt",
                            "r").read().split("\n")[:-1]
 
     def find_labels(self, user):
@@ -161,6 +161,26 @@ class Task1:
                 'lon')), (trackpoints[i-1].get('lat'), trackpoints[i-1].get('lon')))
             print(total_distance)
 
+    def find_hidden_city_ids(self):
+        trackpoints_within_location = self.db.Trackpoint.aggregate([
+            { "$lookup": { 
+                "from": "Activity", 
+                "localField": "activity", 
+                "foreignField": "_id",
+                "as": "user"
+                } 
+            },
+            { "$match": {
+                # lat 39.916, lon 116.397
+                "lat": {"$gte": 39.91, "$lt": 39.92 },
+                "lon": {"$gte": 116.39, "$lt": 116.40 }
+                } 
+            }
+        ])
+
+        users = [ trackpoint["user"][0]["userId"] for trackpoint in trackpoints_within_location ]
+        unique = list(set(users))
+        print(unique)
 
 def main():
     program = None
@@ -173,7 +193,8 @@ def main():
         # program.create_coll(collection_name="Activity")
         # program.create_coll(collection_name="Trackpoint")
         # program.insert()
-        program.calculate_distance()
+        # program.calculate_distance()
+        program.find_hidden_city_ids()
 
     except Exception as e:
         print("ERROR: Failed to use database:", e)
