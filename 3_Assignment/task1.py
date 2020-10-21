@@ -2,6 +2,7 @@ from pprint import pprint
 from DbConnector import DbConnector
 import os
 from datetime import datetime as dt
+from bson.objectid import ObjectId
 
 
 class Task1:
@@ -32,6 +33,7 @@ class Task1:
 
             # If we are on .plt level, we know the username will be the [2] index of the root
             user = root.split("/")[2]
+            user_id = ObjectId()
 
             # Get the users labels, if there are any
             labels_for_user = self.find_labels(user)
@@ -77,8 +79,9 @@ class Task1:
                             trans_mode = label[2]
 
                 format_activity = {
-                    "userId": None,  # should be reference *pointer*. Update this in second iteration
-                    "transportationMode": trans_mode,  # will be updated in next iteration
+                    "userIdRef": user_id,
+                    "userId": user,
+                    "transportationMode": trans_mode,
                     "startTime": start_time,
                     "endTime": end_time,
                 }
@@ -106,7 +109,8 @@ class Task1:
 
             # Create a user
             format_user = {
-                "_id": user,
+                "_id": user_id,
+                "id": user,
                 "hasLabels": user in self.labels,
                 "activities": activities,
             }
@@ -136,15 +140,15 @@ def main():
     program = None
     try:
         program = Task1()
-        program.drop_coll(collection_name="User")
-        program.drop_coll(collection_name="Activity")
-        program.drop_coll(collection_name="Trackpoint")
+        #program.drop_coll(collection_name="User")
+        #program.drop_coll(collection_name="Activity")
+        #program.drop_coll(collection_name="Trackpoint")
+        #program.create_coll(collection_name="User")
+        #program.create_coll(collection_name="Activity")
+        #program.create_coll(collection_name="Trackpoint")
+        #program.insert()
 
-        program.create_coll(collection_name="User")
-        program.create_coll(collection_name="Activity")
-        program.create_coll(collection_name="Trackpoint")
 
-        program.insert()
 
     except Exception as e:
         print("ERROR: Failed to use database:", e)
