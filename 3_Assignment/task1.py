@@ -3,6 +3,7 @@ from DbConnector import DbConnector
 import os
 from datetime import datetime as dt
 from bson.objectid import ObjectId
+from haversine import haversine, Unit
 
 
 class Task1:
@@ -12,7 +13,8 @@ class Task1:
         self.db = self.connection.db
 
         # Read all labels right away, to avoid doing it later
-        self.labels = open("dataset/dataset/labeled_ids.txt", "r").read().split("\n")[:-1]
+        self.labels = open("dataset/dataset/labeled_ids.txt",
+                           "r").read().split("\n")[:-1]
 
     def find_labels(self, user):
         labels_for_user = []
@@ -69,7 +71,8 @@ class Task1:
                 trans_mode = None
                 if user in self.labels:
                     for label in labels_for_user:
-                        label_start = dt.strptime(label[0], "%Y/%m/%d %H:%M:%S")
+                        label_start = dt.strptime(
+                            label[0], "%Y/%m/%d %H:%M:%S")
                         label_end = dt.strptime(label[1], "%Y/%m/%d %H:%M:%S")
 
                         if (
@@ -135,20 +138,42 @@ class Task1:
         collections = self.client["test"].list_collection_names()
         print(collections)
 
+    def calculate_distance(self):
+        activityIds = []
+        total_distance = 0
+
+        # all activities matching the criteria
+        activities = self.db.Activity.find({"userId": 112, "transportationMode": 'walk', "startTime": {
+                                           '$gte': dt(2008, 1, 1), '$lte': dt(2008, 12, 31)}})
+
+        for a in activities:
+            activityIds.append(a.get('_id'))
+
+        # all trackpoints in 2008 that is from a relevant activity
+        trackpoints = self.db.Trackpoint.find(
+            {"dateTime": {'$gte': dt(2008, 1, 1), '$lte': dt(2008, 12, 31)}, "activity": {"$in": activityIds}})
+
+        print('==================DONE===============')
+        count = trackpoints.count()
+        for i in range(1, count):
+            print('hello')
+            total_distance += haversine((trackpoints[i].get('lat'), trackpoints[i].get(
+                'lon')), (trackpoints[i-1].get('lat'), trackpoints[i-1].get('lon')))
+            print(total_distance)
+
 
 def main():
     program = None
     try:
         program = Task1()
-        #program.drop_coll(collection_name="User")
-        #program.drop_coll(collection_name="Activity")
-        #program.drop_coll(collection_name="Trackpoint")
-        #program.create_coll(collection_name="User")
-        #program.create_coll(collection_name="Activity")
-        #program.create_coll(collection_name="Trackpoint")
-        #program.insert()
-
-
+        # program.drop_coll(collection_name="User")
+        # program.drop_coll(collection_name="Activity")
+        # program.drop_coll(collection_name="Trackpoint")
+        # program.create_coll(collection_name="User")
+        # program.create_coll(collection_name="Activity")
+        # program.create_coll(collection_name="Trackpoint")
+        # program.insert()
+        program.calculate_distance()
 
     except Exception as e:
         print("ERROR: Failed to use database:", e)
