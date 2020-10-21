@@ -83,7 +83,7 @@ class Task1:
 
                 format_activity = {
                     "userIdRef": user_id,
-                    "userId": user,
+                    "userId": int(user),
                     "transportationMode": trans_mode,
                     "startTime": start_time,
                     "endTime": end_time,
@@ -101,9 +101,9 @@ class Task1:
                         trackpoint[5] + trackpoint[6], "%Y-%m-%d%H:%M:%S"
                     )
                     format_trackpoint = {
-                        "lat": trackpoint[0],
-                        "lon": trackpoint[1],
-                        "altitude": trackpoint[3],
+                        "lat": float(trackpoint[0]),
+                        "lon": float(trackpoint[1]),
+                        "altitude": float(trackpoint[3]),
                         "dateTime": date_formatted,
                         "activity": activity_id,
                     }
@@ -113,7 +113,7 @@ class Task1:
             # Create a user
             format_user = {
                 "_id": user_id,
-                "id": user,
+                "id": int(user),
                 "hasLabels": user in self.labels,
                 "activities": activities,
             }
