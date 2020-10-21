@@ -182,6 +182,18 @@ class Task1:
         unique = list(set(users))
         print(unique)
 
+    def most_used_mode(self):
+        activities_with_transportation = self.db.Activity.find({ "transportationMode": {"$ne": None} })
+
+        users = {}
+        for activity in activities_with_transportation:
+            if activity["userId"] not in users:
+                users[activity["userId"]] = [ activity["transportationMode"] ]
+            else:
+                users[activity["userId"]].append(activity["transportationMode"])
+        for user in users:
+            print(user, max(set(users[user]), key = users[user].count))
+
 def main():
     program = None
     try:
@@ -194,7 +206,8 @@ def main():
         # program.create_coll(collection_name="Trackpoint")
         # program.insert()
         # program.calculate_distance()
-        program.find_hidden_city_ids()
+        # program.find_hidden_city_ids()
+        program.most_used_mode()
 
     except Exception as e:
         print("ERROR: Failed to use database:", e)
