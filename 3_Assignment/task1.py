@@ -172,8 +172,9 @@ class Task1:
             },
             { "$match": {
                 # lat 39.916, lon 116.397
-                "lat": {"$gte": 39.91, "$lt": 39.92 },
-                "lon": {"$gte": 116.39, "$lt": 116.40 }
+                # $gte is "greater then" while $lte is "less then or equal
+                "lat": {"$gte": 39.915, "$lt": 39.916 },
+                "lon": {"$gte": 116.396, "$lt": 116.397 }
                 } 
             }
         ])
@@ -206,8 +207,8 @@ def main():
         # program.create_coll(collection_name="Trackpoint")
         # program.insert()
         # program.calculate_distance()
-        # program.find_hidden_city_ids()
-        program.most_used_mode()
+        program.find_hidden_city_ids()
+        #program.most_used_mode()
 
     except Exception as e:
         print("ERROR: Failed to use database:", e)
