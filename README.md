@@ -1,4 +1,4 @@
-# TDT4225 - Very Large, Distributed Data Volumes
+# TDT4225 - Very Large Distributed Data Volumes
 
 Quick Start For Assignment 2
 
